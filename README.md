@@ -20,7 +20,7 @@ See install pyenv below for instructions.
 There will be a script you can run like this::
 
 ```bash
-pipenv run shrinky
+pipenv run shrinky -p /dataset/HH_NL_NUTS2.gpkg -r "table_a:2,3,4;table_b:4,3,6"
 ```
 
 It runs the `main()` function in `shrinky/scripts.py`,
