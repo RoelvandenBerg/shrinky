@@ -54,9 +54,9 @@ def main(gpkg_path, validation_result_path, result_target="shrink"):
     if not out_file.parent.exists():
         os.mkdir(str(out_file.parent))
 
-    print("Shrink geopackage")
-    print(f"in: {in_file}")
-    print(f"out: {out_file}")
+    logger.info("Shrinking geopackage")
+    logger.info(f"in: {in_file}")
+    logger.info(f"out: {out_file}")
     driver = ogr.GetDriverByName("GPKG")
 
     in_ds = driver.Open(str(in_file))
@@ -66,7 +66,17 @@ def main(gpkg_path, validation_result_path, result_target="shrink"):
         layer_name = in_layer.GetName()
 
         # make a new layer with the same definition as the old one
-        out_layer = out_ds.CreateLayer(layer_name, geom_type=in_layer.GetGeomType(), options=[f'GEOMETRY_NAME={in_layer.GetGeometryColumn()}'])
+        out_layer = out_ds.CreateLayer(
+            layer_name,
+            in_layer.GetSpatialRef(),
+            geom_type=in_layer.GetGeomType(),
+            options=[
+                f'GEOMETRY_NAME={in_layer.GetGeometryColumn()}',
+                'OVERWRITE=YES',
+                f'FID={in_layer.GetFIDColumn()}'
+            ]
+        )
+
         layer_definition = in_layer.GetLayerDefn()
         for i in range(layer_definition.GetFieldCount()):
             field_definition = layer_definition.GetFieldDefn(i)
@@ -83,6 +93,6 @@ def main(gpkg_path, validation_result_path, result_target="shrink"):
             if feature:
                 out_layer.CreateFeature(feature)
             else:
-                print(f"error, missing: {layer_name} {feature_id} for file {gpkg_path}")
+                logger.warning(f"Warning, missing feature id: {layer_name} {feature_id} for file {gpkg_path}")
 
-    print('Shrink added!')
+    logger.info(f'Shrinked {in_file.name} at {str(out_file)}')
