@@ -1,8 +1,12 @@
 import logging
 import os
+import json
 
 from osgeo import ogr
 from pathlib import Path
+
+from shrinky.parse_geopackage_validator import parse_geopackage_validator_result
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,31 +42,47 @@ def resolve_id_list(table_name, out_ds, explicit_records):
     return id_list
 
 
-def main(gpkg_path, explicit_records, result_target="shrink"):
+def main(gpkg_path, validation_result_path, result_target="shrink"):
+    table_ids = parse_geopackage_validator_result(validation_result_path)
 
     in_file = Path(gpkg_path)
     out_file = in_file.parent / result_target / in_file.name
 
+    if out_file.exists():
+        os.remove(str(out_file))
+
     if not out_file.parent.exists():
-        os.mkdir(result_target)
+        os.mkdir(str(out_file.parent))
 
     print("Shrink geopackage")
     print(f"in: {in_file}")
     print(f"out: {out_file}")
+    driver = ogr.GetDriverByName("GPKG")
 
-    in_ds = ogr.GetDriverByName("GPKG").Open(str(in_file))
-    out_ds = ogr.GetDriverByName("GPKG").CopyDataSource(in_ds, str(out_file))
+    in_ds = driver.Open(str(in_file))
+    out_ds = driver.CreateDataSource(str(out_file))
 
-    geo_tables = out_ds.ExecuteSQL("SELECT table_name FROM gpkg_geometry_columns;")
+    for in_layer in in_ds:
+        layer_name = in_layer.GetName()
 
-    for (table_name,) in geo_tables:
+        # make a new layer with the same definition as the old one
+        out_layer = out_ds.CreateLayer(layer_name, geom_type=in_layer.GetGeomType(), options=[f'GEOMETRY_NAME={in_layer.GetGeometryColumn()}'])
+        layer_definition = in_layer.GetLayerDefn()
+        for i in range(layer_definition.GetFieldCount()):
+            field_definition = layer_definition.GetFieldDefn(i)
+            out_layer.CreateField(field_definition)
 
-        id_list = resolve_id_list(table_name, in_ds, explicit_records)
-        id_list = "'" + "', '".join(map(str, id_list)) + "'"
+        layer_ids = {int(x) for x in table_ids.get(layer_name, set())}
+        for i in range(1, 7):
+            if i not in layer_ids:
+                layer_ids.add(i)
+                break
 
-        sql = f"DELETE FROM {table_name} WHERE rowid NOT IN({id_list});"
-        delete = out_ds.ExecuteSQL(sql)
-        out_ds.ReleaseResultSet(delete)
+        for feature_id in layer_ids:
+            feature = in_layer.GetFeature(int(feature_id))
+            if feature:
+                out_layer.CreateFeature(feature)
+            else:
+                print(f"error, missing: {layer_name} {feature_id} for file {gpkg_path}")
 
-    out_ds.ReleaseResultSet(geo_tables)
-    print('Shrinkaded!')
+    print('Shrink added!')

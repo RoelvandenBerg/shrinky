@@ -5,6 +5,18 @@ FILTER_LIST = ['RQ5', 'RQ15']
 
 
 def parse_geopackage_validator_results(path):
+    explicit_records = parse_geopackage_validator_result(path)
+    explicit_record_string = ''
+    for table_name, id_list in explicit_records.items():
+        id_list = ','.join(map(str, id_list))
+        explicit_record_string += f"{table_name}:{id_list};"
+
+    explicit_record_string = explicit_record_string[:-1]
+
+    print(explicit_record_string)
+
+
+def parse_geopackage_validator_result(path):
     in_file = Path(path)
 
     with open(in_file, "r") as content:
@@ -40,11 +52,4 @@ def parse_geopackage_validator_results(path):
 
         explicit_records[table_name].add(row_id)
 
-    explicit_record_string = ''
-    for table_name, id_list in explicit_records.items():
-        id_list = ','.join(map(str, id_list))
-        explicit_record_string += f"{table_name}:{id_list};"
-
-    explicit_record_string = explicit_record_string[:-1]
-
-    print(explicit_record_string)
+    return explicit_records

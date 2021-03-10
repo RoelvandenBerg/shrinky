@@ -21,7 +21,7 @@ def cli():
     pass
 
 
-@cli.command(name="shrinky")
+@cli.command(name="shrink")
 @click.option(
     "-p",
     "--gpkg-path",
@@ -38,11 +38,19 @@ def cli():
     ),
 )
 @click.option(
-    "-r",
-    "--explicit-records",
-    required=False,
+    "-v",
+    "--validation-result-path",
+    required=True,
     default=None,
-    help="List of tables and id's to keep, example: 'table_name_a:1,2,3,4;table_name_b:1,2,3'",
+    help="Path pointing to the result of a validation",
+    type=click.types.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        writable=False,
+        allow_dash=False,
+    ),
 )
 @click.option(
     "-t",
@@ -52,12 +60,12 @@ def cli():
     help="Folder name where to place shrunken geopackage",
 )
 @click_log.simple_verbosity_option(logger)
-def shrinky_command(gpkg_path, explicit_records, result_target):
+def shrinky_command(gpkg_path, validation_result_path, result_target):
     """
     Shrink geopackage to minimal size. Shrinky picks random records to keep, or you can set these explicitly per table.
     """
     try:
-        main(gpkg_path, explicit_records, result_target)
+        main(gpkg_path, validation_result_path, result_target)
     except AppError:
         logger.exception("shrinky failed:")
         sys.exit(1)
