@@ -26,9 +26,8 @@ RUN pip3 install --no-cache-dir pipenv
 WORKDIR /code
 COPY . /code
 
-RUN pipenv --rm && \
-    PIPENV_VENV_IN_PROJECT=1 pipenv --three --site-packages && \
-    pipenv sync
+RUN PIPENV_VENV_IN_PROJECT=1 pipenv --three --site-packages
+RUN pipenv sync
 
 # --- BUILD IMAGE ---
 FROM base AS build-image

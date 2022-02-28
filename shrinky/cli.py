@@ -1,20 +1,16 @@
 # -*- coding: utf-8 -*-
 """CLI interface for shrinky"""
 import logging
-import sys
 
 import click
 import click_log
-
-# Setup logging before package imports.
-from shrinky.parse_geopackage_validator import parse_geopackage_validator_results
 
 logger = logging.getLogger(__name__)
 click_log.basic_config(logger)
 
 from shrinky.core import main
-from shrinky.error import AppError
 
+logger.info("info logging")
 
 @click.group()
 def cli():
@@ -38,65 +34,34 @@ def cli():
     ),
 )
 @click.option(
-    "-v",
-    "--validation-result-path",
-    required=True,
-    default=None,
-    help="Path pointing to the result of a validation",
-    type=click.types.Path(
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-        writable=False,
-        allow_dash=False,
-    ),
-)
-@click.option(
     "-t",
     "--result-target",
     required=False,
     default="shrink",
     help="Folder name where to place shrunken geopackage",
 )
-@click_log.simple_verbosity_option(logger)
-def shrinky_command(gpkg_path, validation_result_path, result_target):
-    """
-    Shrink geopackage to minimal size. Shrinky picks random records to keep, or you can set these explicitly per table.
-    """
-    try:
-        main(gpkg_path, validation_result_path, result_target)
-    except AppError:
-        logger.exception("shrinky failed:")
-        sys.exit(1)
-
-
-@cli.command(name="parse_validation_result")
 @click.option(
-    "-r",
-    "--validation-result-path",
-    required=True,
-    default=None,
-    help="Path pointing to the geopackage validation result file in json format",
-    type=click.types.Path(
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-        writable=False,
-        allow_dash=False,
-    ),
+    "-s",
+    "--simplify-threshold",
+    required=False,
+    default=107.52,
+    type=click.types.FLOAT,
+    help="Simplify-threshold (hint: take the fourfold based on zoomlevel for RD (from 0): [3440.640, 1720.320, 860.160, 430.080, 215.040, 107.520, 53.760, 26.880, 13.440, 6.720, 3.360, 1.680, 0.840, 0.420, 0.210, 0.105])",
+)
+@click.option(
+    "-b",
+    "--bbox-filter",
+    required=False,
+    default="",
+    type=click.types.STRING,
+    help="BBOX in the same CRS as the source, from which geoms for each layer are preferred. Example: 121088.7989104228764,486719.8953262089635,121578.3960113508656,487207.117663510784"
 )
 @click_log.simple_verbosity_option(logger)
-def parse_geopackage_validator_results_command(validation_result_path):
+def shrinky_command(gpkg_path, result_target, simplify_threshold, bbox_filter):
     """
     Shrink geopackage to minimal size. Shrinky picks random records to keep, or you can set these explicitly per table.
     """
-    try:
-        parse_geopackage_validator_results(validation_result_path)
-    except AppError:
-        logger.exception("shrinky failed:")
-        sys.exit(1)
+    main(gpkg_path, result_target, simplify_threshold, bbox_filter, logger)
 
 
 if __name__ == "__main__":
