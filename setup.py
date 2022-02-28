@@ -34,5 +34,5 @@ setup(
     zip_safe=False,
     install_requires=parse_pipfile(),
     tests_require=parse_pipfile(True),
-    entry_points={"console_scripts": ["shrinky = shrinky.cli:shrinky_command"]},
+    entry_points={"console_scripts": ["shrinky = shrinky.cli:cli"]},
 )

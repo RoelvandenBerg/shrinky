@@ -21,7 +21,7 @@ name = "pypi"
 "shrinky" = {path = ".", editable = true}
 "Click" = "==7.*"
 "click-log" = "==0.3.*"
-"gdal" = "==3.0.4"
+#"gdal" = "*"
 
 [requires]
 python_version = "3.8"
